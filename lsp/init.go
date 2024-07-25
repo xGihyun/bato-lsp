@@ -1,5 +1,12 @@
 package lsp
 
+import (
+	"bato-lsp/rpc"
+	"bufio"
+	"log"
+	"os"
+)
+
 type InitRequest struct {
 	Request
 	Params InitRequestParams `json:"params"`
@@ -59,5 +66,27 @@ func NewInitResponse(id int) InitResponse {
 				Version: "0.0.1-beta",
 			},
 		},
+	}
+}
+
+func MainLoop(scanner *bufio.Scanner, writer *os.File, state State, logger *log.Logger) {
+	for scanner.Scan() {
+		msg := scanner.Bytes()
+		method, contents, err := rpc.DecodeMessage(msg)
+
+		if err != nil {
+			logger.Printf("ERROR: %s", err)
+			continue
+		}
+
+		server := Server{
+			method:   method,
+			contents: contents,
+			writer:   writer,
+			logger:   logger,
+			state:    &state,
+		}
+
+		server.handleMessage()
 	}
 }
